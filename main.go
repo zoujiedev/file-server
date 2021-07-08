@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github/zoujiepro/filestore-server/handler"
+	"github.com/zoujiepro/file-server/handler"
 	"net/http"
 )
 

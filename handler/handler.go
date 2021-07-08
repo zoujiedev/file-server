@@ -3,8 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github/zoujiepro/filestore-server/meta"
-	"github/zoujiepro/filestore-server/utils"
+	"github.com/zoujiepro/file-server/meta"
+	"github.com/zoujiepro/file-server/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
