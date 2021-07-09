@@ -22,3 +22,9 @@ func SHA1File(path string) (string, error) {
 	//return fmt.Sprintf("%x",h.Sum(nil)), nil
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
+
+func Sha1Bytes(data []byte) string {
+	_sha1 := sha1.New()
+	_sha1.Write(data)
+	return hex.EncodeToString(_sha1.Sum(nil))
+}

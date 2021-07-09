@@ -22,11 +22,8 @@ func UploadFile(fileHash string, fileName string, fileSize int64, fileAddr strin
 		return false
 	}
 
-	if affect, err := ret.RowsAffected(); err == nil {
-		if affect > 0 {
-			return true
-		}
-		fmt.Printf("file with hash %s has been upload befer", fileHash)
+	if affect, err := ret.RowsAffected(); err == nil && affect > 0 {
+		return true
 	}
 	return false
 }
