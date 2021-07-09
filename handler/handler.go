@@ -47,7 +47,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		metaInfo.FileSha1, err = utils.SHA1File(fileStorePath)
-		meta.UpdateFileMeta(metaInfo)
+		//meta.UpdateFileMeta(metaInfo)
+		meta.UpdateFileMetaDB(metaInfo)
 
 		fmt.Printf("upload success file[%s], the sha1 = %s", metaInfo.FileName, metaInfo.FileSha1)
 		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
@@ -63,7 +64,12 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileHash := r.Form["filehash"][0]
 
-	fileMeta := meta.GetFileMeta(fileHash)
+	//fileMeta := meta.GetFileMeta(fileHash)
+	fileMeta, err := meta.GetFileMetaDB(fileHash)
+	if err != nil {
+		io.WriteString(w, "there are not exist meta info whit sha1 = "+fileHash)
+		return
+	}
 
 	marshal, err := json.Marshal(fileMeta)
 	if err != nil {
