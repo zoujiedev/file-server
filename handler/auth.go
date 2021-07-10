@@ -7,23 +7,19 @@ import (
 )
 
 func HTTPInterceptor(handlerFunc http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			token := r.Header.Get("token")
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("token")
 
-			if "" == token {
-				w.WriteHeader(http.StatusForbidden)
-				return
-			}
-
-			if username, success := utils.CheckToken(token); success {
-				fmt.Printf("current login user: %s\n", username)
-				handlerFunc(w, r)
-				return
-			}
-
+		if "" == token {
 			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 
-		},
-	)
+		if username, success := utils.CheckToken(token); success {
+			fmt.Printf("current login user: %s\n", username)
+			handlerFunc(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusForbidden)
+	}
 }
