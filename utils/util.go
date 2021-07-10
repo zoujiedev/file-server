@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto"
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
@@ -27,4 +28,10 @@ func Sha1Bytes(data []byte) string {
 	_sha1 := sha1.New()
 	_sha1.Write(data)
 	return hex.EncodeToString(_sha1.Sum(nil))
+}
+
+func MD5(data []byte) string {
+	hash := crypto.MD5.New()
+	hash.Write(data)
+	return hex.EncodeToString(hash.Sum(nil))
 }

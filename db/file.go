@@ -3,12 +3,15 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	mydb "github.com/zoujiepro/file-server/db/mysql"
+	dblayer "github.com/zoujiepro/file-server/db/mysql"
 )
 
 func UploadFile(fileHash string, fileName string, fileSize int64, fileAddr string) bool {
-	stmt, err := mydb.DbConnect().Prepare(`insert into tbl_file(file_sha1,file_name,file_size,file_addr,status) values (?,?,?,?,?)`)
+	sqlStr := `insert into tbl_file(file_sha1,file_name,file_size,file_addr,status) values (?,?,?,?,?)`
 
+	fmt.Printf("the sql: %s\n the parameter: filehash = %s, fileName = %s, fileSize = %d, fileAddr = %s\n", sqlStr, fileHash, fileName, fileSize, fileAddr)
+
+	stmt, err := dblayer.DbConnect().Prepare(sqlStr)
 	if err != nil {
 		fmt.Printf("fail to prepare statment, err: %s", err.Error())
 		return false
@@ -36,7 +39,10 @@ type TableFile struct {
 }
 
 func GetFileMeta(filehash string) (*TableFile, error) {
-	stmt, err := mydb.DbConnect().Prepare(`select file_sha1,file_name,file_size,file_addr from tbl_file where file_sha1 = ? and status = 1 limit 1`)
+	sqlStr := `select file_sha1,file_name,file_size,file_addr from tbl_file where file_sha1 = ? and status = 1 limit 1`
+
+	fmt.Printf("the sql: %s\n the parameter: filehash = %s\n", sqlStr, filehash)
+	stmt, err := dblayer.DbConnect().Prepare(sqlStr)
 	if err != nil {
 		fmt.Printf("prepare sql err: %s", err.Error())
 		return nil, err
@@ -52,4 +58,28 @@ func GetFileMeta(filehash string) (*TableFile, error) {
 	}
 
 	return &tbf, nil
+}
+
+func DeleteFileMeta(filehash string) bool {
+	sqlStr := `delete from tbl_file where file_sha1 = ? limit 1`
+	fmt.Printf("the sql: %s\n the parameter: filehash = %s\n", sqlStr, filehash)
+	stmt, err := dblayer.DbConnect().Prepare(sqlStr)
+	if err != nil {
+		fmt.Println("sql prepare fail: " + err.Error())
+		return false
+	}
+
+	defer stmt.Close()
+
+	result, err := stmt.Exec(filehash)
+	if err != nil {
+		fmt.Println("sql exec fail: " + err.Error())
+		return false
+	}
+
+	if affected, err := result.RowsAffected(); err == nil && affected > 0 {
+		return true
+	}
+
+	return false
 }

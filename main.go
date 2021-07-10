@@ -7,13 +7,13 @@ import (
 
 func main() {
 	http.HandleFunc("/file/upload", handler.UploadHandler)
-	http.HandleFunc("/file/upload/suc", handler.UploadFileSucHandler)
 	http.HandleFunc("/file/meta", handler.GetFileMetaHandler)
 	http.HandleFunc("/file/download", handler.DownloadHandler)
 	http.HandleFunc("/file/update", handler.UpdateHandler)
 	http.HandleFunc("/file/delete", handler.DeleteHandler)
 
-	http.HandleFunc("/user/signup", handler.UserSign)
+	http.HandleFunc("/user/signup", handler.UserSignUp)
+	http.HandleFunc("/user/signin", handler.UserSignIn)
 
 	http.ListenAndServe(":8080", nil)
 }

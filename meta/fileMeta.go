@@ -12,22 +12,8 @@ type FileMeta struct {
 	UpdateTime string
 }
 
-var fileMetas map[string]FileMeta
-
-func init() {
-	fileMetas = make(map[string]FileMeta)
-}
-
-func UpdateFileMeta(meta FileMeta) {
-	fileMetas[meta.FileSha1] = meta
-}
-
 func UpdateFileMetaDB(meta FileMeta) bool {
 	return db.UploadFile(meta.FileSha1, meta.FileName, meta.FileSize, meta.Location)
-}
-
-func GetFileMeta(sha1 string) FileMeta {
-	return fileMetas[sha1]
 }
 
 func GetFileMetaDB(sha1 string) (FileMeta, error) {
@@ -44,6 +30,6 @@ func GetFileMetaDB(sha1 string) (FileMeta, error) {
 	return metaInfo, nil
 }
 
-func DeleteFileMeta(sha1 string) {
-	delete(fileMetas, sha1)
+func DeleteFileMetaDB(sha1 string) bool {
+	return db.DeleteFileMeta(sha1)
 }
