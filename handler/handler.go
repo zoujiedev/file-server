@@ -1,15 +1,15 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/zoujiepro/file-server/meta"
+	"github.com/zoujiepro/file-server/db"
 	"github.com/zoujiepro/file-server/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,11 +25,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fileStorePath := "D:\\tmp\\" + header.Filename
-	metaInfo := meta.FileMeta{
-		FileName:   header.Filename,
-		Location:   fileStorePath,
-		UpdateTime: time.Now().Format("2006-01-02 15:04:05"),
-	}
+	fileName := header.Filename
 
 	newFile, err := os.Create(fileStorePath)
 	if err != nil {
@@ -40,19 +36,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer newFile.Close()
 
-	metaInfo.FileSize, err = io.Copy(newFile, file)
+	fileSize, err := io.Copy(newFile, file)
 	if err != nil {
 		fmt.Printf("copy file fail: %s", err.Error())
 		utils.WriteFail(w, "copy file fail: "+err.Error())
 		return
 	}
 
-	metaInfo.FileSha1, err = utils.SHA1File(fileStorePath)
-	//meta.UpdateFileMeta(metaInfo)
-	meta.UpdateFileMetaDB(metaInfo)
+	fileSha1, err := utils.SHA1File(fileStorePath)
+	db.UploadFile(fileSha1, fileName, fileSize, fileStorePath)
 
-	fmt.Printf("upload success file[%s], the sha1 = %s", metaInfo.FileName, metaInfo.FileSha1)
-	utils.WriteSuccess(w, metaInfo)
+	fmt.Printf("upload success file[%s], the sha1 = %s", fileName, fileSha1)
+	utils.WriteSuccess(w, nil)
 }
 
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,14 +55,13 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileHash := r.Form["filehash"][0]
 
-	//fileMeta := meta.GetFileMeta(fileHash)
-	fileMeta, err := meta.GetFileMetaDB(fileHash)
+	tblf, err := db.GetFileMeta(fileHash)
 	if err != nil {
 		utils.WriteFail(w, "there are not exist meta info whit sha1 = "+fileHash)
 		return
 	}
 
-	marshal, err := json.Marshal(fileMeta)
+	marshal, err := json.Marshal(tblf)
 	if err != nil {
 		fmt.Printf("json fail : %s", err.Error())
 		utils.WriteFail(w, "internal server error: "+err.Error())
@@ -82,14 +76,14 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 
 	sha1 := r.FormValue("filehash")
 
-	fileMeta, err := meta.GetFileMetaDB(sha1)
+	tblf, err := db.GetFileMeta(sha1)
 	if err != nil {
 		fmt.Printf("query meta info err: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	downloadFile, err := os.Open(fileMeta.Location)
+	downloadFile, err := os.Open(tblf.FileAddr.String)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -104,7 +98,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/octect-stream")
-	w.Header().Set("Content-Disposition", "attachment;filename="+"\""+fileMeta.FileName+"\"")
+	w.Header().Set("Content-Disposition", "attachment;filename="+"\""+tblf.FileName.String+"\"")
 	w.Write(readAll)
 }
 
@@ -119,20 +113,23 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	sha1 := r.Form.Get("filehash")
 	newName := r.Form.Get("newname")
 
-	currentFileMeta, err := meta.GetFileMetaDB(sha1)
+	tblf, err := db.GetFileMeta(sha1)
 	if err != nil {
 		fmt.Printf("query metainfo err: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	currentFileMeta.FileName = newName
-	if success := meta.UpdateFileMetaDB(currentFileMeta); !success {
+	if success := db.UpdateFileMeta(sha1, newName); !success {
 		utils.WriteFail(w, "update fail")
 		return
 	}
 
-	marshal, err := json.Marshal(currentFileMeta)
+	tblf.FileName = sql.NullString{
+		newName, true,
+	}
+
+	marshal, err := json.Marshal(tblf)
 	if err != nil {
 		fmt.Printf("json fail: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -151,14 +148,14 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	sha1 := r.Form.Get("filehash")
-	_, err := meta.GetFileMetaDB(sha1)
+	_, err := db.GetFileMeta(sha1)
 	if err != nil {
 		fmt.Println("query err: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if success := meta.DeleteFileMetaDB(sha1); success {
+	if success := db.DeleteFileMeta(sha1); success {
 		utils.WriteSuccess(w, nil)
 	} else {
 		utils.WriteFail(w, "delete fail")

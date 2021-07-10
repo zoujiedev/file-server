@@ -83,3 +83,30 @@ func DeleteFileMeta(filehash string) bool {
 
 	return false
 }
+
+func UpdateFileMeta(filehash string, newName string) bool {
+	sqlStr := `update tbl_file set file_name = ? where file_sha1 = ?`
+
+	fmt.Printf("the sql: %s\n the parameter: filehash = %s, newName = %s\n", sqlStr, filehash, newName)
+
+	stmt, err := dblayer.DbConnect().Prepare(sqlStr)
+	if err != nil {
+		fmt.Printf("update prepare err: %s", err.Error())
+		return false
+	}
+
+	defer stmt.Close()
+
+	result, err := stmt.Exec(newName, filehash)
+	if err != nil {
+		fmt.Printf("update exec err: %s", err.Error())
+		return false
+	}
+
+	if affected, err := result.RowsAffected(); err == nil && affected > 0 {
+		return true
+	} else {
+		fmt.Printf("sql exec success, but affected %s row", affected)
+		return false
+	}
+}
