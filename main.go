@@ -15,5 +15,7 @@ func main() {
 	http.HandleFunc("/user/signup", handler.UserSignUp)
 	http.HandleFunc("/user/signin", handler.UserSignIn)
 
+	http.HandleFunc("/user/files", handler.HTTPInterceptor(handler.GetUserFileHandler))
+
 	http.ListenAndServe(":8080", nil)
 }
