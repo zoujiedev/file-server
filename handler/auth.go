@@ -15,11 +15,14 @@ func HTTPInterceptor(handlerFunc http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if username, success := utils.CheckToken(token); success {
-			fmt.Printf("current login user: %s\n", username)
-			handlerFunc(w, r)
+		var username string
+		var success bool
+		if username, success = utils.CheckToken(token); !success {
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		w.WriteHeader(http.StatusForbidden)
+
+		fmt.Printf("current login user: %s\n", username)
+		handlerFunc(w, r)
 	}
 }
