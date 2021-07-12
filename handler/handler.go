@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -190,4 +191,41 @@ func GetUserFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteSuccess(w, userFiles)
+}
+
+func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
+	if "POST" != r.Method {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	token := r.Header.Get("token")
+	username, _ := db.GetUsernameByToken(token)
+
+	r.ParseForm()
+
+	filehash := r.Form.Get("filehash")
+	fileName := r.Form.Get("fileName")
+	fileSize, err := strconv.ParseInt(r.Form.Get("fileSize"), 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	fileMeta, err := db.GetFileMeta(filehash)
+	if err != nil {
+		utils.WriteFail(w, "unable to query file with hash: "+filehash)
+		return
+	}
+
+	if fileMeta.FileSize.Int64 != fileSize {
+		utils.WriteFail(w, "file with hash: "+filehash+"size["+strconv.FormatInt(fileMeta.FileSize.Int64, 10)+"]not equal current parameter fileSize: "+strconv.FormatInt(fileSize, 10))
+		return
+	}
+
+	fastUpload := db.InsertUserFile(username, filehash, fileSize, fileName)
+	if !fastUpload {
+		utils.WriteFail(w, "用户文件入库失败")
+		return
+	}
+	utils.WriteSuccess(w, nil)
 }
