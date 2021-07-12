@@ -44,7 +44,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fileSha1, err := utils.SHA1File(fileStorePath)
-	db.UploadFile(fileSha1, fileName, fileSize, fileStorePath)
+	if uploadFile := db.UploadFile(fileSha1, fileName, fileSize, fileStorePath); !uploadFile {
+		utils.WriteFail(w, "文件入库失败!")
+		return
+	}
+
+	token := r.Header.Get("token")
+	username, _ := db.GetUsernameByToken(token)
+
+	if userFile := db.InsertUserFile(username, fileSha1, fileSize, fileName); !userFile {
+		utils.WriteFail(w, "用户文件入库失败!")
+		return
+	}
 
 	fmt.Printf("upload success file[%s], the sha1 = %s", fileName, fileSha1)
 	utils.WriteSuccess(w, nil)
@@ -57,7 +68,7 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 
 	tblf, err := db.GetFileMeta(fileHash)
 	if err != nil {
-		utils.WriteFail(w, "there are not exist meta info whit sha1 = "+fileHash)
+		utils.WriteFail(w, "there are not exist meta info with sha1 = "+fileHash)
 		return
 	}
 
@@ -160,4 +171,23 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		utils.WriteFail(w, "delete fail")
 	}
+}
+
+func GetUserFileHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+
+	var username string
+	var success bool
+	if username, success = db.GetUsernameByToken(token); !success {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	userFiles, success := db.GetUserFileByUserName(username)
+	if !success {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteSuccess(w, userFiles)
 }
