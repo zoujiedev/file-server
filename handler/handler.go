@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zoujiepro/file-server/db"
+	"github.com/zoujiepro/file-server/store/ceph"
 	"github.com/zoujiepro/file-server/utils"
+	"gopkg.in/amz.v1/s3"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -45,6 +47,20 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fileSha1, err := utils.SHA1File(fileStorePath)
+
+	//同时将文件存储到ceph中
+	newFile.Seek(0, 0)
+	data, err := ioutil.ReadAll(newFile)
+	if err != nil {
+		fmt.Printf("save file to ceph fail: %s", err.Error())
+		utils.WriteFail(w, "save file to ceph fail: "+err.Error())
+		return
+	}
+	bucket := ceph.GetCephBucket("userfile")
+	cephPath := "/ceph/" + fileSha1
+	bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
+	fileStorePath = cephPath
+
 	if uploadFile := db.UploadFile(fileSha1, fileName, fileSize, fileStorePath); !uploadFile {
 		utils.WriteFail(w, "文件入库失败!")
 		return
