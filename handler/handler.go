@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zoujiepro/file-server/db"
+	"github.com/zoujiepro/file-server/store/oss"
 	"github.com/zoujiepro/file-server/utils"
 	"io"
 	"io/ioutil"
@@ -251,4 +252,21 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteSuccess(w, nil)
+}
+
+func DownloadUrlHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	filehash := r.Form.Get("filehash")
+
+	//从文件表查找记录
+	fileMeta, err := db.GetFileMeta(filehash)
+	if err != nil {
+		utils.WriteFail(w, "err get file meta with hash "+filehash)
+		return
+	}
+
+	//todo 判断文件是在ceph还是oss
+
+	downloadUrl := oss.DownloadUrl(fileMeta.FileAddr.String)
+	w.Write([]byte(downloadUrl))
 }

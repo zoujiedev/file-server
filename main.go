@@ -14,6 +14,9 @@ func main() {
 	http.HandleFunc("/file/delete", handler.HTTPInterceptor(handler.DeleteHandler))
 	http.HandleFunc("/file/upload/fast", handler.HTTPInterceptor(handler.TryFastUploadHandler))
 
+	//文件下载
+	http.HandleFunc("/file/downloadurl", handler.HTTPInterceptor(handler.DownloadUrlHandler))
+
 	//分块上传
 	http.HandleFunc("/file/mpupload/init", handler.HTTPInterceptor(handler.InitialMultipartUploadHandler))
 	http.HandleFunc("/file/mpupload/uppart", handler.HTTPInterceptor(handler.UploadPartHandler))

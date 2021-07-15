@@ -34,3 +34,12 @@ func Bucket() *oss.Bucket {
 	}
 	return nil
 }
+
+func DownloadUrl(objName string) string {
+	signURL, err := Bucket().SignURL(objName, oss.HTTPGet, 3600)
+	if err != nil {
+		fmt.Printf("get signed url err: %s\n", err.Error())
+		return ""
+	}
+	return signURL
+}
