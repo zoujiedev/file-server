@@ -9,6 +9,10 @@ var cephConn *s3.S3
 
 //获取s3连接
 func GetCephConnection() *s3.S3 {
+	if cephConn != nil {
+		return cephConn
+	}
+
 	//1. 初始化ceph的信息
 	//通过查看 radosgw-admin user create --uid=user1 --display
 	auth := aws.Auth{
@@ -25,7 +29,8 @@ func GetCephConnection() *s3.S3 {
 		S3LowercaseBucket:    false,
 		Sign:                 aws.SignV2,
 	}
-	return s3.New(auth, region)
+	cephConn = s3.New(auth, region)
+	return cephConn
 }
 
 //获取Bucket
