@@ -7,6 +7,7 @@ require (
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/garyburd/redigo v1.6.2
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/minio/minio-go/v6 v6.0.57
 	github.com/satori/go.uuid v1.2.0 // indirect
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 	gopkg.in/amz.v1 v1.0.0-20150111123259-ad23e96a31d2
